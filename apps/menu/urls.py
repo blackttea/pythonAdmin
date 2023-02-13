@@ -21,5 +21,5 @@ functions = [e for e in dir(views) if not e.startswith('_') and type(eval('views
 urlpatterns = []
 
 for f in functions:
-    urlpatterns.append(path(f + '/', eval('views.' + f)))
+    urlpatterns.append(path(f, eval('views.' + f)))
 print(urlpatterns)

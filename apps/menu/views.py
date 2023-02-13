@@ -16,7 +16,37 @@ def getMenu(request):
     menu = []
     for item in Menu.objects.all():
         menu.append(model_to_dict(item))
-    return response_success(message='用户登入成功', data={'code': '0', 'list': menu})
+    print(menu)
+    return response_success(message='用户登入成功', data=menu)
+
+
+@token_required()
+def addMenu(request):
+    json_str = request.body
+    json_str = json_str.decode()  # python3.6及以上不用这一句代码
+    dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
+
+    item = Menu()
+    print(dict_data, "==================")
+    # 执行数据库插入
+    menuList = []
+    for m in dict_data:
+        print(m['component'])
+        menuList.append(Menu(
+            title=m['title'],
+            name=m['name'],
+            path=m['path'],
+            component=m['component'],
+            hidden=m['hidden'],
+            redirect=m['redirect'],
+            id=m['id'],
+            parentId=m['parentId'],
+            svgIcon=m['svgIcon'],
+            seq=m['seq']))
+
+    print(menuList)
+    Menu.objects.bulk_create(menuList)
+    return response_success(message="数据入库成功")
 
 
 def response_success(message, data=None, data_list=[]):

@@ -1,3 +1,4 @@
+import hashlib
 import json
 import random
 from io import BytesIO
@@ -50,6 +51,7 @@ def code(request):
 
 
 @request_verify('get')
+@token_required()
 def info(request):
     return response_success(message='success', data={'roles': ['admin'], 'username': 'admin'})
 
@@ -61,9 +63,10 @@ def register(request):
     json_str = json_str.decode()  # python3.6及以上不用这一句代码
     dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
 
-    item = Book()
+    item = User()
+    dict_data['password'] = md5(dict_data['password'], dict_data['username'])
+    print(dict_data, "==================")
     objDictTool.to_obj(item, **dict_data)
-    print("名称: {}, 价格: {},  作者: {}".format(item.name, item.price, item.author))
     # 执行数据库插入
     item.save()
     return response_success(message="数据入库成功")
@@ -77,9 +80,9 @@ def login(request):
     # 录入用户
     username = dict_data.get('username')
     # 录入密码
-    password = dict_data.get('password')
+    password = md5(dict_data.get('password'), dict_data.get('username'))
     # 查询用户是否存在
-    u = User.objects.filter(name=username, passwd=password)
+    u = User.objects.filter(username=username, password=password)
     if u:
         # 生成用户登入凭证
         token = u[0].token
@@ -203,6 +206,14 @@ def response_success(message, data=None, data_list=[]):
         'dataList': data_list  # 返回对象数组
     }, ensure_ascii=False), 'application/json')
 
+
+def md5(pwd, SALT):
+    # 实例化对象
+    obj = hashlib.md5(SALT.encode('utf-8'))
+    # 写入要加密的字节
+    obj.update(pwd.encode('utf-8'))
+    # 获取密文
+    return obj.hexdigest()
 
 def response_failure(message):
     return HttpResponse(json.dumps({

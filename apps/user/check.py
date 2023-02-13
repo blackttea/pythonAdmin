@@ -86,10 +86,10 @@ def token_required():
             except AttributeError:
                 return response_failure("No authenticate header")
 
-            if auth[0].lower() == 'token':
+            if auth[0].lower() == 'token' or auth[0].lower() == 'bearer':
                 try:
                     dict = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
-                    username = dict.get('data').get('name')
+                    username = dict.get('data').get('username')
                 except jwt.ExpiredSignatureError:
                     return response_failure("Token expired")
                 except jwt.InvalidTokenError:
@@ -98,7 +98,7 @@ def token_required():
                     return response_failure("Can not get user object")
 
                 try:
-                    user = User.objects.get(name=username)
+                    user = User.objects.get(username=username)
                 except User.DoesNotExist:
                     return response_failure("User Does not exist")
 
