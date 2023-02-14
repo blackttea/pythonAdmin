@@ -16,7 +16,7 @@ import logging
 import uuid
 
 from utils.captcha.captcha import Captcha
-from utils.util import gen_verify_code
+from utils.util import gen_verify_code, send_email_code, rand_code
 
 # 日志输出常量定义
 logger = logging.getLogger('mylogger')
@@ -70,6 +70,17 @@ def register(request):
     # 执行数据库插入
     item.save()
     return response_success(message="数据入库成功")
+
+
+@request_verify('post')
+def sendEmailCode(request):
+    json_str = request.body
+    json_str = json_str.decode()  # python3.6及以上不用这一句代码
+    dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
+    email_code = rand_code()
+    send_email_code(email_code, "")
+    # 执行数据库插入
+    return response_success(message="验证码发送成功!")
 
 
 # 登入方法认证
@@ -214,6 +225,7 @@ def md5(pwd, SALT):
     obj.update(pwd.encode('utf-8'))
     # 获取密文
     return obj.hexdigest()
+
 
 def response_failure(message):
     return HttpResponse(json.dumps({
