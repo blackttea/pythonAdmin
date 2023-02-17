@@ -6,6 +6,7 @@ from django.shortcuts import render
 from django.http import HttpResponse
 from apps.user.check import token_required
 from menu.models import Menu
+from utils.common import response_failure, response_success
 
 
 @token_required()
@@ -82,31 +83,3 @@ def delMenu(request):
         return response_success(message="菜单删除成功!")
     except:
         return response_failure('{"status":"fail", "msg":"ID不存在"}')
-
-
-def response_success(message, data=None, data_list=[]):
-    return HttpResponse(json.dumps({
-        'code': 200,  # code由前后端配合指定
-        'message': message,  # 提示信息
-        'data': data,  # 返回单个对象
-        'dataList': data_list  # 返回对象数组
-    }, ensure_ascii=False), 'application/json')
-
-
-def response_failure(message):
-    return HttpResponse(json.dumps({
-        'code': 500,
-        'message': message
-    }, ensure_ascii=False), 'application/json')
-
-
-def response_page_success(message, data=None, data_list=[], total=None, page=None, pageSize=None):
-    return HttpResponse(json.dumps({
-        'code': 200,  # code由前后端配合指定
-        'message': message,  # 提示信息
-        'data': data,  # 返回单个对象
-        'dataList': data_list,  # 返回对象数组
-        'total': total,  # 记录总数
-        'page': page,  # 当前页面
-        'pageSize': pageSize  # 当前页面分页大小
-    }, ensure_ascii=False), 'application/json')
