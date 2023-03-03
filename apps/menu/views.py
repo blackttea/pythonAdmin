@@ -32,7 +32,10 @@ def addMenu(request):
     # 执行数据库插入
     menuList = []
     for m in dict_data:
-        print(m['component'])
+        if 'parentId' in m:
+            pass
+        else:
+            m['parentId'] = None
         menuList.append(Menu(
             title=m['title'],
             name=m['name'],
@@ -62,11 +65,20 @@ def updateMenu(request):
     # 使用for循环，这里循环的是查询条件，如果不需要循环查询条件那么直接循环上面的queryset就可以省略下面的.first()步骤
     for _id in dict_data:  # goods_id_list 是无数查询 条件的列表，这里使用的 商品的id
         _obj = queryset.filter(id=_id['id']).first()  # 很重要！！！，必须先获得一条唯一的数据
+        print(type(_obj))
         if _obj:  # 很重要！！！ 判断这条数据是否存在
+            _obj.title = _id['title']
+            _obj.name = _id['name']
+            _obj.hidden = _id['hidden']
+            _obj.svgIcon = _id['svgIcon']
+            _obj.parentId = _id['parentId']
+            _obj.seq = _id['seq']
+            _obj.component = _id['component']
+            _obj.redirect = _id['redirect']
+            _obj.path = _id['path']
             upMenu.append(_obj)  # 把修改数据后的对象添加到列表
-
-    Menu.objects.bulk_update(upMenu, ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq',
-                                      'component', 'redirect'])
+    Menu.objects.bulk_update(upMenu,
+                             ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path'])
     return response_success(message="数据入库成功")
 
 

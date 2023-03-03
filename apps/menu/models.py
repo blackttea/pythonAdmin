@@ -14,6 +14,7 @@ class Menu(models.Model):
     svgIcon = models.CharField(max_length=255, verbose_name='配置')
     hidden = models.BooleanField(verbose_name='是否隐藏')
     role = models.CharField(max_length=255, verbose_name='角色')
+    permission = models.CharField(max_length=255, verbose_name='页面权限')
 
     class Meta:
         db_table = 'sys_menu'  # 指明数据库表名

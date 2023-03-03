@@ -51,7 +51,7 @@ def code(request):
     return response
 
 
-@request_verify('get')
+@request_verify('post')
 @token_required()
 def info(request):
     return response_success(message='success', data={'roles': ['admin'], 'username': 'admin'})
