@@ -4,6 +4,9 @@ import smtplib
 from email.mime.text import MIMEText
 from email.header import Header
 
+import jwt
+from django.conf import settings
+
 
 def gen_verify_code(length=4):
     all_chars = '0123456789abcdefghijklmnopqrstuvwxyz'
@@ -64,3 +67,10 @@ def rand_code(n=0, digit=4):
         elif n == 2:
             list_res += str(chr(random.randrange(97, 122)))
     return list_res
+
+
+def getUsername(request):
+    auth = request.META.get('HTTP_AUTHORIZATION').split(" ")
+    dict = jwt.decode(auth[1], settings.SECRET_KEY, algorithms=['HS256'])
+    username = dict.get('data').get('username')
+    return username

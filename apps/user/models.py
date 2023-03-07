@@ -23,7 +23,9 @@ class User(models.Model):
     password = models.CharField(max_length=255, null=True)
     email = models.CharField(max_length=255, null=True)
     phone = models.CharField(max_length=255, null=True)
-
+    roles = models.CharField(max_length=255, null=True)
+    permission = models.CharField(max_length=255, null=True)
+    level = models.IntegerField(verbose_name='权限级别')
 
     @property
     def token(self):

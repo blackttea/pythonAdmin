@@ -17,7 +17,9 @@ def getMenu(request):
     print('1.==========================>')
     menu = []
     for item in Menu.objects.all():
-        menu.append(model_to_dict(item))
+        tem = model_to_dict(item)
+        # tem['permission'] = json.loads(tem['permission'])
+        menu.append(tem)
     print(menu)
     return response_success(message='用户登入成功', data=menu)
 
@@ -76,9 +78,11 @@ def updateMenu(request):
             _obj.component = _id['component']
             _obj.redirect = _id['redirect']
             _obj.path = _id['path']
+            _obj.permission = _id['permission']
             upMenu.append(_obj)  # 把修改数据后的对象添加到列表
+            print("permission======================", _obj.permission)
     Menu.objects.bulk_update(upMenu,
-                             ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path'])
+                             ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path', 'permission'])
     return response_success(message="数据入库成功")
 
 

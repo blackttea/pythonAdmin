@@ -3,6 +3,8 @@ import json
 import random
 from io import BytesIO
 
+from django.forms import model_to_dict
+
 from apps.user.models import Book, Code
 from apps.user.models import User
 from django.http import HttpResponse
@@ -16,7 +18,7 @@ import logging
 import uuid
 
 from utils.captcha.captcha import Captcha
-from utils.util import gen_verify_code, send_email_code, rand_code
+from utils.util import gen_verify_code, send_email_code, rand_code, getUsername
 from utils.common import response_failure, response_success
 
 # 日志输出常量定义
@@ -54,7 +56,12 @@ def code(request):
 @request_verify('post')
 @token_required()
 def info(request):
-    return response_success(message='success', data={'roles': ['admin'], 'username': 'admin'})
+    username = getUsername(request)
+    u = User.objects.filter(username=username)
+    userInfo = model_to_dict(u[0])
+    return response_success(message='success', data={'roles': ['admin'],
+                                                     'permission': json.loads(userInfo['permission']),
+                                                     'username': 'admin'})
 
 
 @request_verify('post')
@@ -93,6 +100,7 @@ def login(request):
     username = dict_data.get('username')
     # 录入密码
     password = md5(dict_data.get('password'), dict_data.get('username'))
+    print(password)
     # 查询用户是否存在
     u = User.objects.filter(username=username, password=password)
     if u:
@@ -124,15 +132,17 @@ def selectAll(request):
 
 
 @token_required()
-@request_verify('get', ['page', 'pageSize'])
-def selectPage(request):
+@request_verify('post')
+def getUser(request):
+    json_str = request.body
+    dict_data = json.loads(json_str)
     # 当前页码
-    page = request.GET.get('page')
+    page = dict_data['currentPage']
     # 当前分页大小
-    page_size = request.GET.get('pageSize')
-    book_list = Book.objects.all()
+    page_size = dict_data['pageSize']
+    role = User.objects.all()
     # django 分页实体对象
-    paginator = Paginator(book_list, page_size)
+    paginator = Paginator(role, page_size)
     # 查询总记录数
     total = paginator.count
     try:
@@ -144,8 +154,12 @@ def selectPage(request):
     except EmptyPage:
         # 执行分页查询,默认指定页码
         books = paginator.page(paginator.num_pages)
-    return response_page_success(message='后台响应成功', data_list=serializers.serialize("json", books), total=total,
-                                 page=page, pageSize=page_size)
+
+    user_list = []
+    for u in books:
+        user_list.append(model_to_dict(u))
+    return response_success(message='后台响应成功', total=total, data=user_list,
+                            page=page, pageSize=page_size)
 
 
 @token_required()
