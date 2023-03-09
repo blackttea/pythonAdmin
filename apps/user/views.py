@@ -5,7 +5,7 @@ from io import BytesIO
 
 from django.forms import model_to_dict
 
-from apps.user.models import Book, Code
+from apps.user.models import Book, Code, Role
 from apps.user.models import User
 from django.http import HttpResponse
 from django.core import serializers
@@ -23,6 +23,11 @@ from utils.common import response_failure, response_success
 
 # 日志输出常量定义
 logger = logging.getLogger('mylogger')
+
+modelDict = {
+    'user': User,
+    'role': Role,
+}
 
 
 @request_verify('post')
@@ -65,22 +70,6 @@ def info(request):
 
 
 @request_verify('post')
-def register(request):
-    logger.info("post request body 请求数据提交")
-    json_str = request.body
-    json_str = json_str.decode()  # python3.6及以上不用这一句代码
-    dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
-
-    item = User()
-    dict_data['password'] = md5(dict_data['password'], dict_data['username'])
-    print(dict_data, "==================")
-    objDictTool.to_obj(item, **dict_data)
-    # 执行数据库插入
-    item.save()
-    return response_success(message="数据入库成功")
-
-
-@request_verify('post')
 def sendEmailCode(request):
     json_str = request.body
     json_str = json_str.decode()  # python3.6及以上不用这一句代码
@@ -111,36 +100,20 @@ def login(request):
         return response_failure(message='用户登入失败')
 
 
-# Create your views here.
-@token_required()
-@request_verify('get')
-def select(request):
-    books = Book.objects.all()
-    for i in range(len(books)):
-        print("主键：%s   值：%s" % (i + 1, books[i]))
-
-    return response_success(message='后台响应成功', data_list=serializers.serialize("json", books))
-
-
-@token_required()
-@request_verify('post')
-def selectAll(request):
-    books = Book.objects.all()
-    for i in range(len(books)):
-        print("主键：%s   值：%s" % (i + 1, books[i]))
-    return response_success(message='后台响应成功', data_list=serializers.serialize("json", books))
-
-
-@token_required()
-@request_verify('post')
-def getUser(request):
+def getCommon(request, name):
+    m = modelDict.get(name)
     json_str = request.body
     dict_data = json.loads(json_str)
     # 当前页码
     page = dict_data['currentPage']
     # 当前分页大小
     page_size = dict_data['pageSize']
-    role = User.objects.all()
+    cond = dict_data.get('data', {})
+    condition = {}
+    for c in cond:
+        if cond.get(c):
+            condition.setdefault(c, cond.get(c))
+    role = m.objects.filter(**condition).order_by('id')
     # django 分页实体对象
     paginator = Paginator(role, page_size)
     # 查询总记录数
@@ -162,66 +135,72 @@ def getUser(request):
                             page=page, pageSize=page_size)
 
 
-@token_required()
-@request_verify('post', ['page', 'pageSize'])
-def selectPageAll(request):
+def insertCommon(request, name, handle_fun):
     json_str = request.body
     json_str = json_str.decode()  # python3.6及以上不用这一句代码
     dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
 
-    # 当前页码
-    page = dict_data.get('page')
-    # 当前分页大小
-    page_size = dict_data.get('pageSize')
-    book_list = Book.objects.all()
-    # django 分页实体对象
-    paginator = Paginator(book_list, page_size)
-    # 查询总记录数
-    total = paginator.count
-    try:
-        # 执行分页查询
-        books = paginator.page(page)
-    except PageNotAnInteger:
-        # 执行分页查询,默认指定页码
-        books = paginator.page(1)
-    except EmptyPage:
-        # 执行分页查询,默认指定页码
-        books = paginator.page(paginator.num_pages)
-    return response_page_success(message='后台响应成功', data_list=serializers.serialize("json", books), total=total,
-                                 page=page, pageSize=page_size)
-
-
-@token_required()
-def insert(request):
-    # 获取参数,放入表单校验
-    book_form = BookFrom(request.POST)
-    # 判断校验是否成功
-    if book_form.is_valid():  # 验证成功
-        name = book_form.cleaned_data.get("name")
-        author = book_form.cleaned_data.get("author")
-        print("名称：%s   作者：%s" % (name, author))
-        return response_success(message="Django 实体表单验证成功")
-    else:
-        errorDict = book_form.errors
-        for key, value in errorDict.items():
-            print("属性：%s   错误信息：%s" % (key, value))
-        return response_success(message="Django 实体表单验证失败")
-
-
-# json 数据提交,并转换为实体，执行入库操作
-@token_required()
-def insertJSON(request):
-    logger.info("post request body 请求数据提交")
-    json_str = request.body
-    json_str = json_str.decode()  # python3.6及以上不用这一句代码
-    dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
-
-    item = Book()
-    objDictTool.to_obj(item, **dict_data)
-    print("名称: {}, 价格: {},  作者: {}".format(item.name, item.price, item.author))
+    _obj = modelDict.get(name)()
+    if handle_fun:
+        handle_fun(dict_data)
+    objDictTool.to_obj(_obj, **dict_data)
     # 执行数据库插入
-    item.save()
+    _obj.save()
     return response_success(message="数据入库成功")
+
+
+def updateMenu(request, name, up_list, key_list=['id']):
+    json_str = request.body.decode()
+    dict_data = json.loads(json_str)
+    m = modelDict.get(name)
+    queryset = m.objects.filter()
+    condition = {}
+    up_data = {}
+    update_list = []
+    for _id in dict_data:
+        for k in key_list:
+            condition.setdefault(k, _id.get(k))
+        for u in up_list:
+            print(_id.get(u))
+            up_data.setdefault(u, _id.get(u))
+        _obj = queryset.filter(**condition).first()
+        if _obj:
+            update_list.append(m(**_id))
+    m.objects.bulk_update(update_list, up_list)
+    return response_success(message="数据入库成功")
+
+
+@request_verify('post')
+def register(request):
+    def md5Pass(dict_data):
+        dict_data['password'] = md5(dict_data['password'], dict_data['username'])
+
+    return insertCommon(request, 'user', md5Pass)
+
+
+@request_verify('post')
+@token_required()
+def addRole(request):
+    return insertCommon(request, 'role')
+
+
+@token_required()
+@request_verify('post')
+def getRole(request):
+    return getCommon(request, 'role')
+
+
+@token_required()
+@request_verify('post')
+def getUser(request):
+    return getCommon(request, 'user')
+
+
+@token_required()
+@request_verify('post')
+def updateRole(request):
+    up_list = ['name', 'menu', 'page', 'level']
+    return updateMenu(request, 'role', up_list)
 
 
 def md5(pwd, SALT):

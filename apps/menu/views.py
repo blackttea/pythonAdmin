@@ -11,16 +11,14 @@ from utils.common import response_failure, response_success
 
 @token_required()
 def getMenu(request):
-    json_str = request.body
-    # json_str = json_str.decode()  # python3.6及以上不用这一句代码
-    # dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
-    print('1.==========================>')
     menu = []
     for item in Menu.objects.all():
         tem = model_to_dict(item)
-        # tem['permission'] = json.loads(tem['permission'])
+        if tem['permission']:
+            tem['permission'] = json.loads(tem['permission'])
+        else:
+            tem['permission'] = []
         menu.append(tem)
-    print(menu)
     return response_success(message='用户登入成功', data=menu)
 
 
@@ -29,27 +27,13 @@ def addMenu(request):
     json_str = request.body
     json_str = json_str.decode()  # python3.6及以上不用这一句代码
     dict_data = json.loads(json_str)  # loads把str转换为dict，dumps把dict转换为str
-
-    print(dict_data, "==================")
+    menu = ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path', 'permission']
     # 执行数据库插入
     menuList = []
     for m in dict_data:
-        if 'parentId' in m:
-            pass
-        else:
-            m['parentId'] = None
-        menuList.append(Menu(
-            title=m['title'],
-            name=m['name'],
-            path=m['path'],
-            component=m['component'],
-            hidden=m['hidden'],
-            redirect=m['redirect'],
-            parentId=m['parentId'],
-            svgIcon=m['svgIcon'],
-            seq=m['seq']))
-
-    print(menuList)
+        for key in menu:
+            m.get(key, None)
+        menuList.append(Menu(**m))
     Menu.objects.bulk_create(menuList)
     return response_success(message="数据入库成功")
 
@@ -65,10 +49,11 @@ def updateMenu(request):
     queryset = Menu.objects.filter()
     upMenu = []  # 创建列表，用与承载批量更新的对象数据
     # 使用for循环，这里循环的是查询条件，如果不需要循环查询条件那么直接循环上面的queryset就可以省略下面的.first()步骤
+    menu = ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path', 'permission']
     for _id in dict_data:  # goods_id_list 是无数查询 条件的列表，这里使用的 商品的id
         _obj = queryset.filter(id=_id['id']).first()  # 很重要！！！，必须先获得一条唯一的数据
         print(type(_obj))
-        if _obj:  # 很重要！！！ 判断这条数据是否存在
+        if _obj:  # 很重要！！！ 判断这条数据是否存在-
             _obj.title = _id['title']
             _obj.name = _id['name']
             _obj.hidden = _id['hidden']
@@ -80,9 +65,7 @@ def updateMenu(request):
             _obj.path = _id['path']
             _obj.permission = _id['permission']
             upMenu.append(_obj)  # 把修改数据后的对象添加到列表
-            print("permission======================", _obj.permission)
-    Menu.objects.bulk_update(upMenu,
-                             ['title', 'name', 'hidden', 'svgIcon', 'parentId', 'seq', 'component', 'redirect', 'path', 'permission'])
+    Menu.objects.bulk_update(upMenu, menu)
     return response_success(message="数据入库成功")
 
 

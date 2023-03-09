@@ -17,6 +17,18 @@ class Book(models.Model):
         db_table = 'book'
 
 
+class Role(models.Model):
+    id = models.BigAutoField(primary_key=True)
+    name = models.CharField(max_length=255, null=True)
+    menu = models.CharField(max_length=255)
+    page = models.CharField(max_length=255)
+    level = models.CharField(max_length=255)
+
+    class Meta:
+        db_table = 'sys_role'
+        ordering = ['id']
+
+
 class User(models.Model):
     id = models.BigAutoField(primary_key=True)
     username = models.CharField(max_length=255, null=True)
