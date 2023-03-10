@@ -16,6 +16,7 @@ from apps.user.formValidation import BookFrom
 from apps.user.tool import objDictTool
 import logging
 import uuid
+from ast import literal_eval
 
 from utils.captcha.captcha import Captcha
 from utils.util import gen_verify_code, send_email_code, rand_code, getUsername
@@ -65,8 +66,10 @@ def info(request):
     u = User.objects.filter(username=username)
     userInfo = model_to_dict(u[0])
     return response_success(message='success', data={'roles': ['admin'],
-                                                     'permission': json.loads(userInfo['permission']),
-                                                     'username': 'admin'})
+                                                     'menu': literal_eval(userInfo['menu']),
+                                                     'page': userInfo['page'],
+                                                     'level': userInfo['level'],
+                                                     'username': userInfo['username']})
 
 
 @request_verify('post')
@@ -100,7 +103,7 @@ def login(request):
         return response_failure(message='用户登入失败')
 
 
-def getCommon(request, name):
+def getCommon(request, name, handle_data=None):
     m = modelDict.get(name)
     json_str = request.body
     dict_data = json.loads(json_str)
@@ -130,7 +133,10 @@ def getCommon(request, name):
 
     user_list = []
     for u in books:
-        user_list.append(model_to_dict(u))
+        d = model_to_dict(u)
+        if handle_data:
+            handle_data(d)
+        user_list.append(d)
     return response_success(message='后台响应成功', total=total, data=user_list,
                             page=page, pageSize=page_size)
 
@@ -149,7 +155,7 @@ def insertCommon(request, name, handle_fun):
     return response_success(message="数据入库成功")
 
 
-def updateMenu(request, name, up_list, key_list=['id']):
+def updateCommon(request, name, up_list, key_list=['id']):
     json_str = request.body.decode()
     dict_data = json.loads(json_str)
     m = modelDict.get(name)
@@ -161,7 +167,6 @@ def updateMenu(request, name, up_list, key_list=['id']):
         for k in key_list:
             condition.setdefault(k, _id.get(k))
         for u in up_list:
-            print(_id.get(u))
             up_data.setdefault(u, _id.get(u))
         _obj = queryset.filter(**condition).first()
         if _obj:
@@ -187,20 +192,39 @@ def addRole(request):
 @token_required()
 @request_verify('post')
 def getRole(request):
-    return getCommon(request, 'role')
+    def dealMenu(d):
+        if d['menu']:
+            d['menu'] = literal_eval(d['menu'])
+        else:
+            d['menu'] = []
+
+    return getCommon(request, 'role', dealMenu)
 
 
 @token_required()
 @request_verify('post')
 def getUser(request):
-    return getCommon(request, 'user')
+    def dealMenu(d):
+        if d['menu']:
+            d['menu'] = literal_eval(d['menu'])
+        else:
+            d['menu'] = []
+
+    return getCommon(request, 'user', dealMenu)
 
 
 @token_required()
 @request_verify('post')
 def updateRole(request):
     up_list = ['name', 'menu', 'page', 'level']
-    return updateMenu(request, 'role', up_list)
+    return updateCommon(request, 'role', up_list)
+
+
+@token_required()
+@request_verify('post')
+def updateUser(request):
+    up_list = ['username', 'password', 'email', 'phone', 'menu', 'page', 'level']
+    return updateCommon(request, 'user', up_list)
 
 
 def md5(pwd, SALT):

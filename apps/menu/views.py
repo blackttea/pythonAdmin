@@ -1,5 +1,6 @@
 import json
 import time
+from ast import literal_eval
 
 from django.forms import model_to_dict
 from django.shortcuts import render
@@ -14,12 +15,13 @@ def getMenu(request):
     menu = []
     for item in Menu.objects.all():
         tem = model_to_dict(item)
+
         if tem['permission']:
-            tem['permission'] = json.loads(tem['permission'])
+            tem['permission'] = literal_eval(tem['permission'])
         else:
             tem['permission'] = []
         menu.append(tem)
-    return response_success(message='用户登入成功', data=menu)
+    return response_success(message='菜单获取成功', data=menu)
 
 
 @token_required()

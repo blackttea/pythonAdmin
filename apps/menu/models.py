@@ -13,6 +13,7 @@ class Menu(models.Model):
     redirect = models.CharField(max_length=255, verbose_name='定向')
     svgIcon = models.CharField(max_length=255, verbose_name='配置')
     hidden = models.BooleanField(verbose_name='是否隐藏')
+    common = models.BooleanField(verbose_name='公共组件')
     role = models.CharField(max_length=255, verbose_name='角色')
     permission = models.CharField(max_length=255, verbose_name='页面权限')
 
