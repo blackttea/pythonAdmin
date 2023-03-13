@@ -36,7 +36,7 @@ class User(models.Model):
     email = models.CharField(max_length=255, null=True)
     phone = models.CharField(max_length=255, null=True)
     page = models.JSONField(null=True)
-    img = models.BinaryField(null=True)
+    img = models.ImageField()
     menu = models.CharField(max_length=255, null=True)
     level = models.IntegerField(verbose_name='权限级别')
 

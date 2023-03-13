@@ -1,5 +1,7 @@
+import base64
 import hashlib
 import json
+import os
 import random
 from io import BytesIO
 
@@ -69,6 +71,7 @@ def info(request):
                                                      'menu': literal_eval(userInfo['menu']),
                                                      'page': userInfo['page'],
                                                      'level': userInfo['level'],
+                                                     'img': str(userInfo['img']),
                                                      'username': userInfo['username']})
 
 
@@ -225,6 +228,31 @@ def updateRole(request):
 def updateUser(request):
     up_list = ['username', 'password', 'email', 'phone', 'menu', 'page', 'level']
     return updateCommon(request, 'user', up_list)
+
+
+@token_required()
+def uploadFile(request):
+    img = request.FILES.get('file')
+    img_name = img.name
+    mobile = os.path.splitext(img_name)[0]
+    ext = os.path.splitext(img_name)[1]
+    # 重定义文件名
+    img_name = f'img_{mobile}{ext}'
+    # 从配置文件中载入图片保存路径
+    img_path = os.path.join('./file/img', img_name)
+    # 写入文件
+    with open(img_path, 'ab') as fp:
+        # 如果上传的图片非常大，就通过chunks()方法分割成多个片段来上传
+        for chunk in img.chunks():
+            fp.write(chunk)
+    f = open(img_path, "rb")
+    # 读取文件的内容转换为base64编码
+    ls_f = base64.b64encode(f.read())
+    f.close()
+    os.remove(img_path)
+    username = getUsername(request)
+    User.objects.filter(username=username).update(img=ls_f)
+    return response_success("成功", data={'img': str(ls_f)})
 
 
 def md5(pwd, SALT):
