@@ -67,11 +67,12 @@ def info(request):
     username = getUsername(request)
     u = User.objects.filter(username=username)
     userInfo = model_to_dict(u[0])
+    img = str(userInfo['img']).replace("b'", '').replace("'", '')
     return response_success(message='success', data={'roles': ['admin'],
                                                      'menu': literal_eval(userInfo['menu']),
                                                      'page': userInfo['page'],
                                                      'level': userInfo['level'],
-                                                     'img': str(userInfo['img']),
+                                                     'img': img,
                                                      'username': userInfo['username']})
 
 
@@ -241,18 +242,21 @@ def uploadFile(request):
     # 从配置文件中载入图片保存路径
     img_path = os.path.join('./file/img', img_name)
     # 写入文件
-    with open(img_path, 'ab') as fp:
-        # 如果上传的图片非常大，就通过chunks()方法分割成多个片段来上传
-        for chunk in img.chunks():
-            fp.write(chunk)
-    f = open(img_path, "rb")
+    # with open(img_path, 'ab') as fp:
+    #     # 如果上传的图片非常大，就通过chunks()方法分割成多个片段来上传
+    #     for chunk in img.chunks():
+    #         fp.write(chunk)
+    # f = open(img_path, "rb")
     # 读取文件的内容转换为base64编码
-    ls_f = base64.b64encode(f.read())
-    f.close()
-    os.remove(img_path)
+    # ls_f = base64.b64encode(f.read())
+    # f.close()
+    data = base64.b64encode(img.read())
+    file_url = 'data:image/png;base64,{}'.format(data)
+    file_url = file_url.replace("b'", '').replace("'", '')
+    # os.remove(img_path)
     username = getUsername(request)
-    User.objects.filter(username=username).update(img=ls_f)
-    return response_success("成功", data={'img': str(ls_f)})
+    User.objects.filter(username=username).update(img=file_url)
+    return response_success("成功", data={'img': file_url})
 
 
 def md5(pwd, SALT):
