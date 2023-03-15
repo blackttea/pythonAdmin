@@ -209,6 +209,7 @@ def getRole(request):
 @request_verify('post')
 def getUser(request):
     def dealMenu(d):
+        d['img'] = str(d['img']).replace("b'", '').replace("'", '')
         if d['menu']:
             d['menu'] = literal_eval(d['menu'])
         else:
