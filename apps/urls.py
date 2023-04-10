@@ -20,4 +20,5 @@ urlpatterns = [
     re_path(r'user/', include('user.urls')),
     re_path(r'test/', include('cmdb.urls')),
     re_path(r'menu/', include('menu.urls')),
+    re_path(r'tool/', include('tool.urls')),
 ]
